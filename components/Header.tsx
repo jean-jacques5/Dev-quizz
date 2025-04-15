@@ -90,7 +90,7 @@ export default function Header() {
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.15, duration: 0.2 }}
                 >
-                  <Link href="/category/1" className="block p-2 hover:bg-gray-100 rounded">
+                  <Link href="/categories" className="block p-2 hover:bg-gray-100 rounded">
                     Catégories
                   </Link>
                 </motion.div>
