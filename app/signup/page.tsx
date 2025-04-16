@@ -1,65 +1,70 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState, useCallback } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { useAuth } from "@/contexts/AuthContext"
-import { Loader2 } from "lucide-react"
-import { SupabaseClient } from "@supabase/supabase-js"
-import { createClient } from "@/utils/supabase/client"
+import { useState, useCallback } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 export default function Signup() {
-  const [username, setUsername] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const { signup } = useAuth()
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
-      e.preventDefault()
+      e.preventDefault();
 
+      // Validation des champs
       if (!username || !email || !password) {
-        setError("Veuillez remplir tous les champs")
-        return
+        setError("Veuillez remplir tous les champs.");
+        return;
       }
 
       if (password.length < 6) {
-        setError("Le mot de passe doit contenir au moins 6 caractères")
-        return
+        setError("Le mot de passe doit contenir au moins 6 caractères.");
+        return;
       }
 
-      setError("")
-      setIsLoading(true)
+      setError("");
+      setIsLoading(true);
 
       try {
-        const supabase = createClient()
-        const { error } = await supabase
-      .from('utilisateur')
-      .insert({ nom_utilisateur:username, email:email, mot_de_passe:password, role:"utilisateur" })
+        const supabase = createClient();
 
-        if (!error) {
-          router.push("/")
-        } else {
-          console.log (error)
-          setError("Une erreur est survenue lors de l'inscription")
+        // Insérer l'utilisateur dans la table `utilisateur`
+        const { error } = await supabase
+          .from("utilisateur")
+          .insert({
+            nom_utilisateur: username,
+            email: email,
+            mot_de_passe: password,
+            role: "utilisateur",
+          });
+
+        if (error) {
+          console.error("Erreur Supabase :", error);
+          setError("Une erreur est survenue lors de l'inscription.");
+          return;
         }
+
+        // Rediriger vers la page d'accueil après une inscription réussie
+        router.push("/");
       } catch (err) {
-        setError("Une erreur est survenue lors de l'inscription")
-        console.error(err)
+        console.error("Erreur inattendue :", err);
+        setError("Une erreur inattendue est survenue.");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     },
-    [username, email, password, signup, router],
-  )
+    [username, email, password, router]
+  );
 
   // Variants d'animation
   const containerVariants = {
@@ -72,7 +77,7 @@ export default function Signup() {
         duration: 0.3,
       },
     },
-  }
+  };
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
@@ -81,7 +86,7 @@ export default function Signup() {
       opacity: 1,
       transition: { duration: 0.5 },
     },
-  }
+  };
 
   return (
     <motion.div
@@ -170,5 +175,5 @@ export default function Signup() {
         </motion.div>
       </motion.div>
     </motion.div>
-  )
+  );
 }

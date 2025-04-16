@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import { Lock } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
-import { cookies } from "next/headers"
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -20,6 +19,7 @@ export default function Home() {
   const { isAuthenticated } = useAuth()
   const router = useRouter()
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [top_quiz, setTopQuiz] = useState<any[]>([])
 
   const carouselImages = [
     {
@@ -104,71 +104,6 @@ export default function Home() {
     return () => clearInterval(interval)
   }, [nextSlide])
 
-  // ✅ IMAGES RÉALISTES POUR LES QUIZZ
-  const topQuizzes = [
-    {
-      id: 1,
-      title: "Quiz Informatique",
-      rank: "1st",
-      imageUrl: "/images/informatique/1.jpg",
-    },
-    {
-      id: 2,
-      title: "Quiz Informatique",
-      rank: "2nd",
-      imageUrl: "/images/informatique/th.jpg",
-    },
-    {
-      id: 3,
-      title: "Quiz Sport",
-      rank: "3rd",
-      imageUrl: "/images/sport/1.jpg",
-    },
-    {
-      id: 4,
-      title: "Quiz Musique",
-      rank: "4th",
-      imageUrl: "/images/musique/th.jpg",
-    },
-    {
-      id: 5,
-      title: "Quiz Musique",
-      rank: "5th",
-      imageUrl: "/images/musique/th (1).jpg",
-    },
-    {
-      id: 6,
-      title: "Quiz Jeux-vidéos",
-      rank: "6th",
-      imageUrl: "/images/jeux vidéos/1.jpg",
-    },
-    {
-      id: 7,
-      title: "Quiz Jeux-vidéos",
-      rank: "7th",
-      imageUrl: "/images/jeux vidéos/1_1.jpg",
-    },
-    {
-      id: 8,
-      title: "Quiz Sport",
-      rank: "8th",
-      imageUrl: "/images/sport/foot.png",
-    },
-    {
-      id: 9,
-      title: "Quiz Musique",
-      rank: "9th",
-      imageUrl: "/images/sport/time.jpg",
-    },
-    {
-      id: 10,
-      title: "Quiz Sport",
-      rank: "10th",
-      imageUrl: "/images/sport/quiz.jpg",
-    },
-  ]
-
-
   const categories = [
     { id: 1, title: "Title", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit..." },
     { id: 2, title: "Title", description: "Description de la catégorie 2" },
@@ -197,17 +132,37 @@ export default function Home() {
     },
   }
 
-const getdata=async()=> {
+  const fetchQuizzes = async () => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('quiz')
+      .select('*')
+      .order('nombre_participation', { ascending: false })
+      .limit(10)
+    
+    if (error) {
+      console.error('Erreur lors de la récupération des quiz :', error)
+      return
+    }
+    
+    if (data) {
+      // Transformer les données pour avoir le format attendu
+      const formattedData = data.map((quiz, index) => ({
+        id: quiz.id_quiz,
+        title: quiz.titre_quiz,
+        rank: `${index + 1}${index === 0 ? 'st' : index === 1 ? 'nd' : index === 2 ? 'rd' : 'th'}`,
+        imageUrl: quiz.image_path || "img/logo.png", // Image par défaut selon votre indication
+        nombre_participation: quiz.nombre_participation
+      }))
+      
+      setTopQuiz(formattedData)
+      console.log('Quiz récupérés :', formattedData)
+    }
+  }
 
-  const supabase = createClient()
-  const { data: quiz } = await supabase.from('quiz').select() 
-  console.log (quiz)
-
-}
-useEffect(()=>{
-  getdata()
-},[]
-)
+  useEffect(() => {
+    fetchQuizzes()
+  }, [])
 
   return (
     <motion.div
@@ -244,7 +199,7 @@ useEffect(()=>{
         </motion.h2>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {topQuizzes.map((quiz, index) => (
+          {top_quiz.map((quiz, index) => (
             <motion.div
               key={quiz.id}
               variants={{
