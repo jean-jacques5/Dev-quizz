@@ -1,3 +1,4 @@
+// ... imports
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
@@ -11,7 +12,6 @@ import { Lock } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export default function Home() {
-  // État pour le carousel
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const carouselRef = useRef<HTMLDivElement>(null)
@@ -19,26 +19,34 @@ export default function Home() {
   const router = useRouter()
   const [showAuthModal, setShowAuthModal] = useState(false)
 
-  // Images du carousel
   const carouselImages = [
     {
       id: 1,
       bgColor: "bg-gray-200",
       elements: (
-        <div className="flex flex-col items-center">
-          <div className="w-32 h-16 bg-gray-400 transform rotate-180 skew-x-12"></div>
-          <div className="w-24 h-24 bg-gray-400 mt-4 rounded-full"></div>
-          <div className="w-24 h-16 bg-gray-400 mt-4"></div>
+        <div className="w-full h-[400px] overflow-hidden rounded-lg">
+          <Image
+            src="/images/sport/footC.jpg"
+            alt="Football"
+            width={1200}
+            height={400}
+            className="w-full h-full object-cover"
+          />
         </div>
       ),
     },
     {
       id: 2,
-      bgColor: "bg-gray-300",
+      bgColor: "bg-gray-200",
       elements: (
-        <div className="flex items-center justify-center">
-          <div className="w-32 h-32 bg-gray-500 rounded-full"></div>
-          <div className="w-32 h-32 bg-gray-400 rounded-full ml-4"></div>
+        <div className="w-full h-[400px] overflow-hidden rounded-lg">
+          <Image
+            src="/images/Musique/musicC.jpg"
+            alt="Music"
+            width={1200}
+            height={400}
+            className="w-full h-full object-cover"
+          />
         </div>
       ),
     },
@@ -46,27 +54,28 @@ export default function Home() {
       id: 3,
       bgColor: "bg-gray-200",
       elements: (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="w-16 h-16 bg-gray-400 transform rotate-45"></div>
-          <div className="w-16 h-16 bg-gray-500 rounded-lg"></div>
-          <div className="w-16 h-16 bg-gray-400 transform rotate-12"></div>
+        <div className="w-full h-[400px] overflow-hidden rounded-lg">
+          <Image
+            src="/images/sport/basket.jpg"
+            alt="Basketball"
+            width={1200}
+            height={400}
+            className="w-full h-full object-cover"
+          />
         </div>
       ),
     },
-  ]
+  ];
+  
 
-  // Créer un tableau avec les slides originaux plus une copie du premier slide à la fin
   const extendedSlides = [...carouselImages, carouselImages[0]]
 
-  // Navigation du carousel
   const nextSlide = useCallback(() => {
     if (isTransitioning) return
 
     if (currentSlide === carouselImages.length - 1) {
-      // Si on est au dernier slide original, on passe à la copie du premier slide
       setCurrentSlide(currentSlide + 1)
 
-      // Après la transition, on revient au premier slide sans animation
       setTimeout(() => {
         setIsTransitioning(true)
         if (carouselRef.current) {
@@ -74,7 +83,6 @@ export default function Home() {
         }
         setCurrentSlide(0)
 
-        // Réactiver la transition après le changement
         setTimeout(() => {
           if (carouselRef.current) {
             carouselRef.current.style.transition = "transform 500ms ease-in-out"
@@ -83,12 +91,10 @@ export default function Home() {
         }, 50)
       }, 500)
     } else {
-      // Navigation normale
       setCurrentSlide(currentSlide + 1)
     }
   }, [currentSlide, isTransitioning, carouselImages.length])
 
-  // Changement automatique de slide toutes les 5 secondes
   useEffect(() => {
     const interval = setInterval(() => {
       nextSlide()
@@ -96,30 +102,78 @@ export default function Home() {
     return () => clearInterval(interval)
   }, [nextSlide])
 
-  // Simuler des données de quiz
-  const topQuizzes = Array(10)
-    .fill(null)
-    .map((_, i) => ({
-      id: i + 1,
-      title: "titre quiz",
-      rank: "1st",
-      imageUrl: "/placeholder.svg?key=wf2m0",
-    }))
-
-  // Simuler des données de catégories
-  const categories = [
+  // ✅ IMAGES RÉALISTES POUR LES QUIZZ
+  const topQuizzes = [
     {
       id: 1,
-      title: "Title",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Doloremque illo quod impedit, id Lorem ipsum dolor sit amet.",
+      title: "Quiz Informatique",
+      rank: "1st",
+      imageUrl: "/images/informatique/1.jpg",
     },
+    {
+      id: 2,
+      title: "Quiz Informatique",
+      rank: "2nd",
+      imageUrl: "/images/informatique/th.jpg",
+    },
+    {
+      id: 3,
+      title: "Quiz Sport",
+      rank: "3rd",
+      imageUrl: "/images/sport/1.jpg",
+    },
+    {
+      id: 4,
+      title: "Quiz Musique",
+      rank: "4th",
+      imageUrl: "/images/musique/th.jpg",
+    },
+    {
+      id: 5,
+      title: "Quiz Musique",
+      rank: "5th",
+      imageUrl: "/images/musique/th (1).jpg",
+    },
+    {
+      id: 6,
+      title: "Quiz Jeux-vidéos",
+      rank: "6th",
+      imageUrl: "/images/jeux vidéos/1.jpg",
+    },
+    {
+      id: 7,
+      title: "Quiz Jeux-vidéos",
+      rank: "7th",
+      imageUrl: "/images/jeux vidéos/1_1.jpg",
+    },
+    {
+      id: 8,
+      title: "Quiz Sport",
+      rank: "8th",
+      imageUrl: "/images/sport/foot.png",
+    },
+    {
+      id: 9,
+      title: "Quiz Musique",
+      rank: "9th",
+      imageUrl: "/images/sport/time.jpg",
+    },
+    {
+      id: 10,
+      title: "Quiz Sport",
+      rank: "10th",
+      imageUrl: "/images/sport/quiz.jpg",
+    },
+  ]
+
+
+  const categories = [
+    { id: 1, title: "Title", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit..." },
     { id: 2, title: "Title", description: "Description de la catégorie 2" },
     { id: 3, title: "Title", description: "Description de la catégorie 3" },
     { id: 4, title: "Title", description: "Description de la catégorie 4" },
   ]
 
-  // Variants d'animation
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -206,14 +260,12 @@ export default function Home() {
                 <div className="bg-gray-200 rounded-lg p-2">
                   <div className="relative aspect-square bg-gray-300 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
                     <Image
-                      src={quiz.imageUrl || "/placeholder.svg"}
+                      src={quiz.imageUrl}
                       alt={`Quiz ${quiz.title}`}
                       width={200}
                       height={200}
                       className="object-cover w-full h-full"
                     />
-
-                    {/* Badge de classement */}
                     <div className="absolute bottom-2 left-2 flex items-center">
                       <div className="w-6 h-6 bg-gray-400"></div>
                       <span className="text-xs text-gray-500 ml-1">{quiz.rank}</span>
@@ -228,7 +280,7 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Modale d'authentification */}
+        {/* Auth Modal */}
         {showAuthModal && !isAuthenticated && (
           <motion.div
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
