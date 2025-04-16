@@ -7,6 +7,7 @@ import { Menu, Plus, User, X, LogOut } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
+import Image from "next/image"
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -29,13 +30,17 @@ export default function Header() {
           </div>
 
           {/* Colonne centrale - Logo */}
-          <div className="flex justify-center items-center">
-            <Link href="/" className="flex items-center">
-              <div className="bg-gray-200 w-10 h-10 flex items-center justify-center rounded-md">
-                <span className="text-xs font-medium">logo</span>
-              </div>
-            </Link>
-          </div>
+<div className="flex justify-center items-center">
+  <Link href="/" className="flex items-center">
+    <div className="w-14 h-14 rounded-full overflow-hidden shadow-md border border-gray-200">
+      <img
+        src="/img/logo.png"
+        alt="Logo"
+        className="w-full h-full object-cover"
+      />
+    </div>
+  </Link>
+</div>
 
           {/* Colonne droite - Boutons d'action */}
           <div className="flex justify-end items-center space-x-4">

@@ -1,53 +1,61 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState, useCallback } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { useAuth } from "@/contexts/AuthContext"
-import { Loader2 } from "lucide-react"
+import { useState, useCallback } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 export default function Login() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const { login } = useAuth()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
-      e.preventDefault()
+      e.preventDefault();
 
       if (!email || !password) {
-        setError("Veuillez remplir tous les champs")
-        return
+        setError("Veuillez remplir tous les champs");
+        return;
       }
 
-      setError("")
-      setIsLoading(true)
+      setError("");
+      setIsLoading(true);
 
       try {
-        const success = await login(email, password)
+        const supabase = createClient();
 
-        if (success) {
-          router.push("/")
-        } else {
-          setError("Email ou mot de passe incorrect")
+        // Vérifier les informations d'identification
+        const { data, error } = await supabase
+          .from("utilisateur")
+          .select("*")
+          .eq("email", email)
+          .eq("mot_de_passe", password)
+          .single();
+
+        if (error || !data) {
+          setError("Email ou mot de passe incorrect");
+          return;
         }
+
+        // Connexion réussie
+        alert("Connexion réussie !");
+        router.push("/");
       } catch (err) {
-        setError("Une erreur est survenue lors de la connexion")
-        console.error(err)
+        setError("Une erreur est survenue lors de la connexion");
+        console.error(err);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     },
-    [email, password, login, router],
-  )
+    [email, password, router]
+  );
 
   // Variants d'animation
   const containerVariants = {
@@ -60,7 +68,7 @@ export default function Login() {
         duration: 0.3,
       },
     },
-  }
+  };
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
@@ -69,7 +77,7 @@ export default function Login() {
       opacity: 1,
       transition: { duration: 0.5 },
     },
-  }
+  };
 
   return (
     <motion.div
@@ -145,5 +153,5 @@ export default function Login() {
         </motion.div>
       </motion.div>
     </motion.div>
-  )
+  );
 }
