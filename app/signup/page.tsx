@@ -10,6 +10,8 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
 import { Loader2 } from "lucide-react"
+import { SupabaseClient } from "@supabase/supabase-js"
+import { createClient } from "@/utils/supabase/client"
 
 export default function Signup() {
   const [username, setUsername] = useState("")
@@ -38,11 +40,15 @@ export default function Signup() {
       setIsLoading(true)
 
       try {
-        const success = await signup(username, email, password)
+        const supabase = createClient()
+        const { error } = await supabase
+      .from('utilisateur')
+      .insert({ nom_utilisateur:username, email:email, mot_de_passe:password, role:"utilisateur" })
 
-        if (success) {
+        if (!error) {
           router.push("/")
         } else {
+          console.log (error)
           setError("Une erreur est survenue lors de l'inscription")
         }
       } catch (err) {

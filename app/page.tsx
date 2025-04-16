@@ -10,6 +10,8 @@ import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Lock } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/utils/supabase/client"
+import { cookies } from "next/headers"
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -194,6 +196,18 @@ export default function Home() {
       transition: { duration: 0.5 },
     },
   }
+
+const getdata=async()=> {
+
+  const supabase = createClient()
+  const { data: quiz } = await supabase.from('quiz').select() 
+  console.log (quiz)
+
+}
+useEffect(()=>{
+  getdata()
+},[]
+)
 
   return (
     <motion.div
