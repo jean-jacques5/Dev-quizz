@@ -1,23 +1,28 @@
 "use client"
-
+ 
 import { useState, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, Plus, User, X, LogOut } from "lucide-react"
+import { Menu, Plus, User, X, LogOut, ChevronDown } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
 import Image from "next/image"
-
+ 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false)
   const pathname = usePathname()
   const { user, logout, isAuthenticated } = useAuth()
-
+ 
   const toggleMenu = useCallback(() => {
     setIsMenuOpen((prev) => !prev)
   }, [])
-
+ 
+  const toggleCategories = useCallback(() => {
+    setIsCategoriesOpen((prev) => !prev)
+  }, [])
+ 
   return (
     <header className="bg-white py-4 relative z-50 rounded-lg mt-4">
       <div className="w-full px-4">
@@ -28,7 +33,7 @@ export default function Header() {
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
-
+ 
           {/* Colonne centrale - Logo */}
 <div className="flex justify-center items-center">
   <Link href="/" className="flex items-center">
@@ -41,7 +46,7 @@ export default function Header() {
     </div>
   </Link>
 </div>
-
+ 
           {/* Colonne droite - Boutons d'action */}
           <div className="flex justify-end items-center space-x-4">
             {isAuthenticated ? (
@@ -51,7 +56,7 @@ export default function Header() {
                     <Plus className="h-5 w-5" />
                   </Button>
                 </Link>
-
+ 
                 <Link href="/profile">
                   <Button variant="ghost" size="icon">
                     <User className="h-5 w-5" />
@@ -68,7 +73,7 @@ export default function Header() {
           </div>
         </div>
       </div>
-
+ 
       {/* Menu de navigation avec animation */}
       <AnimatePresence>
         {isMenuOpen && (
@@ -90,16 +95,49 @@ export default function Header() {
                     Accueil
                   </Link>
                 </motion.div>
+ 
+                {/* Catégories avec sous-menu */}
                 <motion.div
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.15, duration: 0.2 }}
                 >
-                  <Link href="/categories" className="block p-2 hover:bg-gray-100 rounded">
-                    Catégories
-                  </Link>
+                  <div>
+                    <button
+                      onClick={toggleCategories}
+                      className="flex justify-between items-center w-full p-2 hover:bg-gray-100 rounded"
+                    >
+                      <span>Catégories</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isCategoriesOpen ? "rotate-180" : ""}`} />
+                    </button>
+ 
+                    <AnimatePresence>
+                      {isCategoriesOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="pl-4 pt-2 space-y-1"
+                        >
+                          <Link href="/categories?tab=sport" className="block p-2 text-sm hover:bg-gray-100 rounded">
+                            Sport
+                          </Link>
+                          <Link href="/categories?tab=musique" className="block p-2 text-sm hover:bg-gray-100 rounded">
+                            Musique
+                          </Link>
+                          <Link href="/categories?tab=jeux-video" className="block p-2 text-sm hover:bg-gray-100 rounded">
+                            Jeux-vidéos
+                          </Link>
+                          <Link href="/categories?tab=informatique" className="block p-2 text-sm hover:bg-gray-100 rounded">
+                            Informatique
+                          </Link>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </motion.div>
-
+ 
                 {isAuthenticated && (
                   <>
                     <motion.div
@@ -143,3 +181,5 @@ export default function Header() {
     </header>
   )
 }
+ 
+ 
