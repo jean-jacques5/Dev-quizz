@@ -3,8 +3,8 @@
 import { useState, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, Plus, User, X, LogOut, ChevronDown } from "lucide-react"
-import { usePathname } from "next/navigation"
+import { Menu, Plus, User, X, LogOut, ChevronDown, Search } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
 import Image from "next/image"
@@ -12,7 +12,10 @@ import Image from "next/image"
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { user, logout, isAuthenticated } = useAuth()
  
   const toggleMenu = useCallback(() => {
@@ -22,6 +25,19 @@ export default function Header() {
   const toggleCategories = useCallback(() => {
     setIsCategoriesOpen((prev) => !prev)
   }, [])
+
+  const toggleSearch = useCallback(() => {
+    setIsSearchOpen((prev) => !prev)
+  }, [])
+
+  const handleSearch = useCallback((e: { preventDefault: () => void }) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/search?title=${encodeURIComponent(searchQuery.trim())}`)
+      setSearchQuery("")
+      setIsSearchOpen(false)
+    }
+  }, [searchQuery, router])
  
   return (
     <header className="bg-white py-4 relative z-50 rounded-lg mt-4">
@@ -35,20 +51,24 @@ export default function Header() {
           </div>
  
           {/* Colonne centrale - Logo */}
-<div className="flex justify-center items-center">
-  <Link href="/" className="flex items-center">
-    <div className="w-14 h-14 rounded-full overflow-hidden shadow-md border border-gray-200">
-      <img
-        src="/img/logo.png"
-        alt="Logo"
-        className="w-full h-full object-cover"
-      />
-    </div>
-  </Link>
-</div>
+          <div className="flex justify-center items-center">
+            <Link href="/" className="flex items-center">
+              <div className="w-14 h-14 rounded-full overflow-hidden shadow-md border border-gray-200">
+                <img
+                  src="/img/logo.png"
+                  alt="Logo"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </Link>
+          </div>
  
           {/* Colonne droite - Boutons d'action */}
           <div className="flex justify-end items-center space-x-4">
+            <Button variant="ghost" size="icon" onClick={toggleSearch} className="border border-gray-300 rounded-md">
+              <Search className="h-5 w-5" />
+            </Button>
+
             {isAuthenticated ? (
               <>
                 <Link href="/create-quiz">
@@ -73,11 +93,38 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* Barre de recherche avec animation */}
+      <AnimatePresence>
+        {isSearchOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="absolute top-full left-0 w-full bg-white shadow-md rounded-b-lg px-4 py-3 z-50"
+          >
+            <form onSubmit={handleSearch} className="flex items-center">
+              <input
+                type="text"
+                placeholder="Rechercher un quiz par titre..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-grow px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Button type="submit" className="rounded-l-none">
+                <Search className="h-5 w-5 mr-2" />
+                Rechercher
+              </Button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
  
       {/* Menu de navigation avec animation */}
       <AnimatePresence>
         {isMenuOpen && (
-          <div className="absolute top-full left-0 w-full z-50 overflow-hidden px-4">
+          <div className="absolute top-full left-0 w-full z-40 overflow-hidden px-4">
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -173,6 +220,28 @@ export default function Header() {
                     </motion.div>
                   </>
                 )}
+
+                {/* Option de recherche dans le menu également */}
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.35, duration: 0.2 }}
+                >
+                  <div className="block p-2 hover:bg-gray-100 rounded">
+                    <form onSubmit={handleSearch} className="flex items-center">
+                      <input
+                        type="text"
+                        placeholder="Rechercher un quiz..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="flex-grow px-2 py-1 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                      />
+                      <Button type="submit" size="sm" className="rounded-l-none h-8">
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </form>
+                  </div>
+                </motion.div>
               </nav>
             </motion.div>
           </div>
@@ -181,5 +250,3 @@ export default function Header() {
     </header>
   )
 }
- 
- 
