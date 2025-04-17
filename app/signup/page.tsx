@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import bcryptjs from "bcryptjs";
 
 export default function Signup() {
   const [username, setUsername] = useState("");
@@ -56,13 +57,13 @@ export default function Signup() {
         }
 
         // Insérer l'utilisateur dans la table `utilisateur`
-        const { error: insertError } = await supabase
+        const { error } = await supabase
           .from("utilisateur")
           .insert({
             nom_utilisateur: username,
             email: email,
             mot_de_passe: password,
-            role: "utilisateur", // Par défaut, le rôle est "utilisateur"
+            role: "utilisateur",
           });
 
         if (insertError) {
