@@ -8,6 +8,13 @@ import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
 import Image from "next/image"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
  
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -19,26 +26,28 @@ export default function Header() {
   const { user, logout, isAuthenticated } = useAuth()
  
   const toggleMenu = useCallback(() => {
-    setIsMenuOpen((prev) => !prev)
+    setIsMenuOpen((prevState) => !prevState)
   }, [])
  
   const toggleCategories = useCallback(() => {
-    setIsCategoriesOpen((prev) => !prev)
+    setIsCategoriesOpen((prevState) => !prevState)
   }, [])
 
   const toggleSearch = useCallback(() => {
-    setIsSearchOpen((prev) => !prev)
-  }, [])
+    setIsSearchOpen((prevState) => !prevState)
+    if (!isSearchOpen) {
+      // Reset query when opening
+      setSearchQuery("")
+    }
+  }, [isSearchOpen])
 
-  const handleSearch = useCallback((e: { preventDefault: () => void }) => {
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      router.push(`/search?title=${encodeURIComponent(searchQuery.trim())}`)
-      setSearchQuery("")
+      router.push(`/recherche?title=${encodeURIComponent(searchQuery.trim())}`)
       setIsSearchOpen(false)
     }
   }, [searchQuery, router])
- 
   return (
     <header className="bg-white py-4 relative z-50 rounded-lg mt-4">
       <div className="w-full px-4">
@@ -93,160 +102,164 @@ export default function Header() {
           </div>
         </div>
       </div>
-
-      {/* Barre de recherche avec animation */}
+      
+      {/* Menu latéral */}
       <AnimatePresence>
-        {isSearchOpen && (
+        {isMenuOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="absolute top-full left-0 w-full bg-white shadow-md rounded-b-lg px-4 py-3 z-50"
+            initial={{ opacity: 0, x: -300 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -300 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-50 bg-black bg-opacity-50"
+            onClick={toggleMenu}
           >
-            <form onSubmit={handleSearch} className="flex items-center">
-              <input
-                type="text"
-                placeholder="Rechercher un quiz par titre..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-grow px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <Button type="submit" className="rounded-l-none">
-                <Search className="h-5 w-5 mr-2" />
-                Rechercher
-              </Button>
-            </form>
+            <motion.div
+              initial={{ x: -300 }}
+              animate={{ x: 0 }}
+              exit={{ x: -300 }}
+              transition={{ duration: 0.3 }}
+              className="fixed top-0 left-0 h-full w-80 bg-white p-6 shadow-xl overflow-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex flex-col h-full">
+                <div className="flex justify-between items-center mb-8">
+                  <h2 className="text-xl font-bold">Menu</h2>
+                  <Button variant="ghost" size="icon" onClick={toggleMenu}>
+                    <X className="h-6 w-6" />
+                  </Button>
+                </div>
+                
+                <nav className="space-y-6 flex-1">
+                  <div className="space-y-2">
+                    <Link href="/" onClick={toggleMenu}>
+                      <div className={`py-2 px-4 rounded-md hover:bg-gray-100 ${pathname === "/" ? "bg-gray-100 font-medium" : ""}`}>
+                        Accueil
+                      </div>
+                    </Link>
+                    
+                    <div className="space-y-1">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between py-2 px-4 rounded-md hover:bg-gray-100"
+                        onClick={toggleCategories}
+                      >
+                        Catégories
+                        <ChevronDown className={`h-4 w-4 transition-transform ${isCategoriesOpen ? "rotate-180" : ""}`} />
+                      </Button>
+                      
+                      <AnimatePresence>
+                        {isCategoriesOpen && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="pl-4 space-y-1">
+                              <Link href="/categories/sport" onClick={toggleMenu}>
+                                <div className="py-2 px-4 rounded-md hover:bg-gray-100">Sport</div>
+                              </Link>
+                              <Link href="/categories/musique" onClick={toggleMenu}>
+                                <div className="py-2 px-4 rounded-md hover:bg-gray-100">Musique</div>
+                              </Link>
+                              <Link href="/categories/informatique" onClick={toggleMenu}>
+                                <div className="py-2 px-4 rounded-md hover:bg-gray-100">Informatique</div>
+                              </Link>
+                              <Link href="/categories/jeux-videos" onClick={toggleMenu}>
+                                <div className="py-2 px-4 rounded-md hover:bg-gray-100">Jeux vidéos</div>
+                              </Link>
+                              <Link href="/categories" onClick={toggleMenu}>
+                                <div className="py-2 px-4 rounded-md hover:bg-gray-100 text-purple-600">Toutes les catégories</div>
+                              </Link>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    
+                    <Link href="/recherche" onClick={toggleMenu}>
+                      <div className={`py-2 px-4 rounded-md hover:bg-gray-100 ${pathname.startsWith("/recherche") ? "bg-gray-100 font-medium" : ""}`}>
+                        Rechercher
+                      </div>
+                    </Link>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-gray-200 space-y-2">
+                    {isAuthenticated ? (
+                      <>
+                        <Link href="/profile" onClick={toggleMenu}>
+                          <div className={`py-2 px-4 rounded-md hover:bg-gray-100 ${pathname === "/profile" ? "bg-gray-100 font-medium" : ""}`}>
+                            Mon profil
+                          </div>
+                        </Link>
+                        <Link href="/create-quiz" onClick={toggleMenu}>
+                          <div className={`py-2 px-4 rounded-md hover:bg-gray-100 ${pathname === "/create-quiz" ? "bg-gray-100 font-medium" : ""}`}>
+                            Créer un quiz
+                          </div>
+                        </Link>
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start py-2 px-4 rounded-md hover:bg-gray-100 text-red-500"
+                          onClick={() => {
+                            logout();
+                            toggleMenu();
+                          }}
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Se déconnecter
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Link href="/login" onClick={toggleMenu}>
+                          <div className={`py-2 px-4 rounded-md hover:bg-gray-100 ${pathname === "/login" ? "bg-gray-100 font-medium" : ""}`}>
+                            Se connecter
+                          </div>
+                        </Link>
+                        <Link href="/signup" onClick={toggleMenu}>
+                          <div className={`py-2 px-4 rounded-md hover:bg-gray-100 ${pathname === "/signup" ? "bg-gray-100 font-medium" : ""}`}>
+                            S'inscrire
+                          </div>
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </nav>
+                
+                <div className="mt-8 text-center text-sm text-gray-500">
+                  <p>&copy; 2025 QuizApp</p>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
- 
-      {/* Menu de navigation avec animation */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <div className="absolute top-full left-0 w-full z-40 overflow-hidden px-4">
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="bg-white shadow-lg rounded-b-lg border-t overflow-hidden"
-            >
-              <nav className="space-y-2 py-4 px-4">
-                <motion.div
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.1, duration: 0.2 }}
-                >
-                  <Link href="/" className="block p-2 hover:bg-gray-100 rounded">
-                    Accueil
-                  </Link>
-                </motion.div>
- 
-                {/* Catégories avec sous-menu */}
-                <motion.div
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.15, duration: 0.2 }}
-                >
-                  <div>
-                    <button
-                      onClick={toggleCategories}
-                      className="flex justify-between items-center w-full p-2 hover:bg-gray-100 rounded"
-                    >
-                      <span>Catégories</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${isCategoriesOpen ? "rotate-180" : ""}`} />
-                    </button>
- 
-                    <AnimatePresence>
-                      {isCategoriesOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="pl-4 pt-2 space-y-1"
-                        >
-                          <Link href="/categories?tab=sport" className="block p-2 text-sm hover:bg-gray-100 rounded">
-                            Sport
-                          </Link>
-                          <Link href="/categories?tab=musique" className="block p-2 text-sm hover:bg-gray-100 rounded">
-                            Musique
-                          </Link>
-                          <Link href="/categories?tab=jeux-video" className="block p-2 text-sm hover:bg-gray-100 rounded">
-                            Jeux-vidéos
-                          </Link>
-                          <Link href="/categories?tab=informatique" className="block p-2 text-sm hover:bg-gray-100 rounded">
-                            Informatique
-                          </Link>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
- 
-                {isAuthenticated && (
-                  <>
-                    <motion.div
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.2, duration: 0.2 }}
-                    >
-                      <Link href="/profile" className="block p-2 hover:bg-gray-100 rounded">
-                        Profil
-                      </Link>
-                    </motion.div>
-                    <motion.div
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.25, duration: 0.2 }}
-                    >
-                      <Link href="/create-quiz" className="block p-2 hover:bg-gray-100 rounded">
-                        Créer un quiz
-                      </Link>
-                    </motion.div>
-                    <motion.div
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.3, duration: 0.2 }}
-                    >
-                      <button
-                        onClick={logout}
-                        className="flex items-center w-full text-left p-2 hover:bg-gray-100 rounded text-red-500"
-                      >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Déconnexion
-                      </button>
-                    </motion.div>
-                  </>
-                )}
-
-                {/* Option de recherche dans le menu également */}
-                <motion.div
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.35, duration: 0.2 }}
-                >
-                  <div className="block p-2 hover:bg-gray-100 rounded">
-                    <form onSubmit={handleSearch} className="flex items-center">
-                      <input
-                        type="text"
-                        placeholder="Rechercher un quiz..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="flex-grow px-2 py-1 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                      />
-                      <Button type="submit" size="sm" className="rounded-l-none h-8">
-                        <Search className="h-4 w-4" />
-                      </Button>
-                    </form>
-                  </div>
-                </motion.div>
-              </nav>
-            </motion.div>
+      
+      {/* Boite de dialogue de recherche */}
+      <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rechercher un quiz</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSearch} className="flex w-full gap-2 items-center pt-4">
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher par titre..."
+              className="flex-1"
+              autoFocus
+            />
+            <Button type="submit" size="sm">
+              <Search className="h-4 w-4 mr-2" />
+              Rechercher
+            </Button>
+          </form>
+          <div className="text-sm text-muted-foreground mt-2">
+            Recherchez parmi nos quiz disponibles par titre.
           </div>
-        )}
-      </AnimatePresence>
+        </DialogContent>
+      </Dialog>
     </header>
   )
 }
