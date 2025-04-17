@@ -1,352 +1,372 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState, useEffect, useCallback } from "react"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Check, Loader2 } from "lucide-react"
-import { motion } from "framer-motion"
-import { useAuth } from "@/contexts/AuthContext"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { createClient } from "@/utils/supabase/client"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type React from "react";
+import { useState, useEffect, useCallback } from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Check, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/utils/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function CreateQuiz() {
-  const [questionCount, setQuestionCount] = useState(1)
-  // Commented out file selection
-  // const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  // const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [answers, setAnswers] = useState<Record<number, boolean>>({})
-  const [questions, setQuestions] = useState<Record<number, string>>({})
-  const [showIndicator, setShowIndicator] = useState(false)
-  const [title, setTitle] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [category, setCategory] = useState<string>("")
-  const maxQuestions = 10
-  const { isAuthenticated, user } = useAuth()
-  const router = useRouter()
+  const [questionCount, setQuestionCount] = useState(1);
+  const [answers, setAnswers] = useState<Record<number, boolean>>({});
+  const [questions, setQuestions] = useState<Record<number, string>>({});
+  const [showIndicator, setShowIndicator] = useState(false);
+  const [title, setTitle] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [category, setCategory] = useState<string>("");
+  const maxQuestions = 10;
+
+  const { isAuthenticated, user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push("/login")
+      router.push("/login");
     }
-  }, [isAuthenticated, router])
-
-  // Commented out file change handler
-  /*
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setSelectedFile(file)
-    }
-  }, [])
-  */
+  }, [isAuthenticated, router]);
 
   const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = Number.parseInt(e.target.value)
-    setQuestionCount(newValue)
-    setShowIndicator(true)
+    const newValue = Number.parseInt(e.target.value);
+    setQuestionCount(newValue);
+    setShowIndicator(true);
     setTimeout(() => {
-      setShowIndicator(false)
-    }, 2000)
-  }, [])
+      setShowIndicator(false);
+    }, 1000);
+  }, []);
 
-  const handleAnswerChange = useCallback((questionNumber: number, isTrue: boolean) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionNumber]: isTrue,
-    }))
-  }, [])
+  const handleAnswerChange = useCallback((index: number, value: boolean) => {
+    setAnswers((prev) => ({ ...prev, [index]: value }));
+  }, []);
 
-  const handleQuestionChange = useCallback((questionNumber: number, text: string) => {
-    setQuestions((prev) => ({
-      ...prev,
-      [questionNumber]: text,
-    }))
-  }, [])
-
-  const handleCategoryChange = useCallback((value: string) => {
-    setCategory(value)
-  }, [])
+  const handleQuestionChange = useCallback((index: number, value: string) => {
+    setQuestions((prev) => ({ ...prev, [index]: value }));
+  }, []);
 
   const handleSubmit = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
+      
+      // Vérifier que l'utilisateur est bien authentifié
+      if (!user || !user.email) {
+        setError("Vous devez être connecté pour créer un quiz");
+        setLoading(false);
+        return;
+      }
 
+      // Validation
       if (!title.trim()) {
-        setError("Veuillez fournir un titre pour le quiz")
-        setLoading(false)
-        return
+        setError("Veuillez fournir un titre pour le quiz");
+        setLoading(false);
+        return;
       }
 
       if (!category) {
-        setError("Veuillez sélectionner une catégorie")
-        setLoading(false)
-        return
+        setError("Veuillez sélectionner une catégorie");
+        setLoading(false);
+        return;
       }
 
       for (let i = 1; i <= questionCount; i++) {
         if (!questions[i] || questions[i].trim() === '') {
-          setError(`La question ${i} ne peut pas être vide`)
-          setLoading(false)
-          return
+          setError(`La question ${i} ne peut pas être vide`);
+          setLoading(false);
+          return;
         }
+
         if (answers[i] === undefined) {
-          setError(`Veuillez sélectionner une réponse pour la question ${i}`)
-          setLoading(false)
-          return
+          setError(`Veuillez sélectionner une réponse pour la question ${i}`);
+          setLoading(false);
+          return;
         }
       }
 
-      const supabase = createClient()
+      const supabase = createClient();
       
-      // Debug your database schema
-      console.log("Attempting to create quiz with data:", {
+      // Récupérer l'ID de l'utilisateur depuis la table utilisateur en utilisant l'email
+      const { data: userData, error: userError } = await supabase
+        .from('utilisateur')
+        .select('id_utilisateur')
+        .eq('email', user.email)
+        .single();
+        
+      if (userError) {
+        console.error("Erreur lors de la récupération de l'utilisateur:", userError);
+        setError(`Erreur utilisateur: ${JSON.stringify(userError)}`);
+        setLoading(false);
+        return;
+      }
+      
+      if (!userData) {
+        setError("Utilisateur introuvable. Veuillez vous reconnecter.");
+        setLoading(false);
+        return;
+      }
+      
+      console.log("Utilisateur trouvé:", userData);
+      
+      // Préparation des données du quiz avec l'ID utilisateur correct
+      const quizData = {
         titre_quiz: title,
         image_path: "img/logo.png",
-        id_utilisateur: user?.id,
-        id_categorie: parseInt(category)
-      })
+        id_utilisateur: userData.id_utilisateur,
+        id_categorie: parseInt(category),
+        date_creation: new Date().toISOString(),
+        nombre_participation: 0
+      };
       
-      // Try using a simpler quiz insert first
-      const { data: quizData, error: quizError } = await supabase
+      console.log("Données du quiz à insérer:", quizData);
+      
+      // 1. Insertion du quiz
+      const { data: quizData_inserted, error: quizError } = await supabase
         .from('quiz')
-        .insert({
-          titre_quiz: title,
-          image_path: "img/logo.png",
-          id_utilisateur: user?.id,
-          id_categorie: parseInt(category)
-        })
-        .select()
+        .insert(quizData)
+        .select();
 
       if (quizError) {
-        console.error("Erreur détaillée lors de la création du quiz:", quizError)
-        setError(`Erreur lors de la création du quiz: ${quizError.message || JSON.stringify(quizError)}`)
-        setLoading(false)
-        return
+        console.error("Erreur lors de la création du quiz:", quizError);
+        setError(`Erreur lors de la création du quiz: ${JSON.stringify(quizError)}`);
+        setLoading(false);
+        return;
+      }
+      
+      if (!quizData_inserted || quizData_inserted.length === 0) {
+        console.error("Aucune donnée retournée après insertion");
+        setError("Erreur: Aucune donnée retournée après la création du quiz");
+        setLoading(false);
+        return;
       }
 
-      const quizId = quizData[0].id
+      console.log("Quiz créé avec succès:", quizData_inserted);
+      const quizId = quizData_inserted[0].id_quiz;
       
-      // Insert questions and responses according to new structure
+      // 2. Insertion des questions et réponses
       for (let i = 1; i <= questionCount; i++) {
-        // First insert the question
-        const { data: questionData, error: questionError } = await supabase
+        // Préparation des données de question
+        const questionData = {
+          id_quiz: quizId,
+          question: questions[i],
+        };
+        
+        console.log(`Données de la question ${i} à insérer:`, questionData);
+        
+        // Insérer la question
+        const { data: insertedQuestionData, error: questionError } = await supabase
           .from('question')
-          .insert({
-            id_quiz: quizId,
-            question: questions[i],
-            is_reponse_question: 2 // Using 2 as default value based on your example
-          })
-          .select()
-
+          .insert(questionData)
+          .select();
+          
         if (questionError) {
-          console.error(`Erreur lors de l'ajout de la question ${i}:`, questionError)
-          setError(`Erreur lors de l'ajout de la question ${i}: ${questionError.message}`)
-          // Don't delete the quiz on error, let's just report the issue
-          setLoading(false)
-          return
+          console.error(`Erreur lors de l'ajout de la question ${i}:`, questionError);
+          setError(`Erreur lors de l'ajout de la question: ${JSON.stringify(questionError)}`);
+          setLoading(false);
+          return;
         }
-
-        // Then insert the response for that question
-        const questionId = questionData[0].id_question
+        
+        if (!insertedQuestionData || insertedQuestionData.length === 0) {
+          console.error(`Aucune donnée retournée après insertion de la question ${i}`);
+          setError(`Erreur: Aucune donnée retournée après l'insertion de la question ${i}`);
+          setLoading(false);
+          return;
+        }
+        
+        console.log(`Question ${i} créée:`, insertedQuestionData);
+        const questionId = insertedQuestionData[0].id_question;
+        
+        // Préparation des données de réponse
+        const responseData = {
+          id_quiz: quizId,
+          id_question: questionId,
+          reponse: answers[i]
+        };
+        
+        console.log(`Données de la réponse ${i} à insérer:`, responseData);
+        
+        // Insérer la réponse correspondante
         const { error: responseError } = await supabase
           .from('reponse_question')
-          .insert({
-            id_quiz: quizId,
-            id_question: questionId,
-            reponse: answers[i]
-          })
-
+          .insert(responseData);
+          
         if (responseError) {
-          console.error(`Erreur lors de l'ajout de la réponse ${i}:`, responseError)
-          setError(`Erreur lors de l'ajout de la réponse ${i}: ${responseError.message}`)
-          setLoading(false)
-          return
+          console.error(`Erreur lors de l'ajout de la réponse pour la question ${i}:`, responseError);
+          setError(`Erreur lors de l'ajout de la réponse: ${JSON.stringify(responseError)}`);
+          setLoading(false);
+          return;
         }
+        
+        console.log(`Réponse pour la question ${i} créée avec succès`);
       }
 
-      setError(null)
-      setTimeout(() => {
-        router.push("/")
-      }, 1000)
-    } catch (err) {
-      console.error("Erreur inattendue:", err)
-      setError(`Une erreur inattendue est survenue: ${err instanceof Error ? err.message : String(err)}`)
-    } finally {
-      setLoading(false)
+      console.log("Quiz complet créé avec succès!");
+      
+      // Redirection vers la page du quiz créé
+      router.push(`/quiz/${quizId}`);
+      
+    } catch (error: any) {
+      console.error("Erreur inattendue:", error);
+      setError(`Une erreur inattendue s'est produite: ${error?.message || JSON.stringify(error)}`);
+      setLoading(false);
     }
-  }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        when: "beforeChildren",
-        staggerChildren: 0.1,
-        duration: 0.3,
-      },
-    },
-  }
+        staggerChildren: 0.05
+      }
+    }
+  };
 
   const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { duration: 0.5 },
-    },
-  }
-
-  if (!isAuthenticated) return null
-
-  const renderQuestions = () => {
-    const leftColumnQuestions = []
-    const rightColumnQuestions = []
-
-    for (let i = 1; i <= maxQuestions; i++) {
-      const questionElement = (
-        <motion.div
-          key={i}
-          className={i > questionCount ? "hidden" : "block"}
-          variants={itemVariants}
-          initial="hidden"
-          animate={i <= questionCount ? "visible" : "hidden"}
-          custom={i}
-        >
-          <label htmlFor={`question${i}`} className="block text-sm font-medium text-black mb-2">
-            Question {i}
-          </label>
-          <Textarea
-            id={`question${i}`}
-            placeholder={`entrer la question ${i}`}
-            className="w-full rounded-md"
-            value={questions[i] || ''}
-            onChange={(e) => handleQuestionChange(i, e.target.value)}
-          />
-          <div className="mt-2">
-            <label className="block text-sm font-medium text-gray-600 mb-2">Réponse question {i}</label>
-            <div className="flex rounded-full overflow-hidden border border-gray-300">
-              <button
-                type="button"
-                onClick={() => handleAnswerChange(i, true)}
-                className={`w-1/2 py-2 flex items-center justify-center transition-colors ${
-                  answers[i] === true ? "bg-purple-500 text-white font-medium" : "bg-white hover:bg-gray-100"
-                } cursor-pointer`}
-              >
-                {answers[i] === true && <Check className="h-4 w-4 mr-1" />}
-                <span>VRAI</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleAnswerChange(i, false)}
-                className={`w-1/2 py-2 flex items-center justify-center transition-colors ${
-                  answers[i] === false ? "bg-purple-500 text-white font-medium" : "bg-white hover:bg-gray-100"
-                } cursor-pointer`}
-              >
-                {answers[i] === false && <Check className="h-4 w-4 mr-1" />}
-                <span>FAUX</span>
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      )
-
-      if (i <= 5) leftColumnQuestions.push(questionElement)
-      else rightColumnQuestions.push(questionElement)
-    }
-
-    return { leftColumnQuestions, rightColumnQuestions }
-  }
-
-  const { leftColumnQuestions, rightColumnQuestions } = renderQuestions()
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
 
   return (
-    <motion.div
-      className="bg-white rounded-lg shadow-sm p-6 mt-4 mb-10"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
-      <motion.h1 className="text-xl text-gray-500 mb-6 text-center" variants={itemVariants}>
-        création de quiz
-      </motion.h1>
-
-      {error && (
-        <motion.div
-          className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-md mb-6"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          {error}
+    <div className="container mx-auto max-w-4xl py-10 px-4 sm:px-6">
+      <motion.div
+        className="space-y-8 bg-white p-8 rounded-2xl shadow-lg"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.h1 variants={itemVariants} className="text-3xl font-bold">
+          Créer un nouveau Quiz
+        </motion.h1>
+        
+        <motion.div variants={itemVariants} className="space-y-4">
+          <label htmlFor="title" className="block font-medium text-gray-700">
+            Titre du Quiz
+          </label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Entrez le titre de votre quiz"
+            className="w-full"
+          />
         </motion.div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-8">
-          <motion.div variants={itemVariants}>
-            <label htmlFor="title" className="block text-sm font-medium text-black mb-2">
-              titre de votre quiz
-            </label>
+        
+        <motion.div variants={itemVariants} className="space-y-4">
+  <label htmlFor="category" className="block font-medium text-gray-700">
+    Catégorie
+  </label>
+  <Select onValueChange={setCategory} value={category}>
+    <SelectTrigger className="w-full">
+      <SelectValue placeholder="Sélectionnez une catégorie" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="1">Musique</SelectItem>
+      <SelectItem value="2">Sport</SelectItem>
+      <SelectItem value="3">Jeux-Video</SelectItem>
+      <SelectItem value="4">Informatique</SelectItem>
+    </SelectContent>
+  </Select>
+</motion.div>
+        
+        <motion.div variants={itemVariants} className="space-y-4">
+          <label htmlFor="questions" className="block font-medium text-gray-700">
+            Nombre de questions : {questionCount}
+          </label>
+          <div className="relative">
             <Input
-              id="title"
-              placeholder="Entrez le titre de votre quiz..."
-              className="w-full rounded-md"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </motion.div>
-
-          {/* Replace file upload with category selection */}
-          <motion.div variants={itemVariants}>
-            <label className="block text-sm font-medium text-black mb-2">
-              catégorie du quiz
-            </label>
-            <Select onValueChange={handleCategoryChange} value={category}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sélectionnez une catégorie" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Musique</SelectItem>
-                <SelectItem value="2">Sport</SelectItem>
-                <SelectItem value="3">Jeux-Video</SelectItem>
-                <SelectItem value="4">Imformatique</SelectItem>
-              </SelectContent>
-            </Select>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <label className="block text-sm font-medium text-black mb-2">
-              nombre de questions
-            </label>
-            <input
+              id="questions"
               type="range"
-              min={1}
+              min="1"
               max={maxQuestions}
               value={questionCount}
               onChange={handleSliderChange}
               className="w-full"
             />
-            {showIndicator && <p className="text-sm text-gray-500 mt-1">{questionCount} questions</p>}
+            {showIndicator && (
+              <span className="absolute -ml-2 -mt-10 bg-blue-500 text-white px-2 py-1 rounded-full">
+                {questionCount}
+              </span>
+            )}
+            <div className="flex justify-between text-sm text-gray-500 mt-1">
+              <span>1</span>
+              <span>{maxQuestions}</span>
+            </div>
+          </div>
+        </motion.div>
+        
+        <motion.div variants={itemVariants} className="space-y-6">
+          <h2 className="text-xl font-semibold border-b pb-2">Questions</h2>
+          
+          {Array.from({ length: questionCount }, (_, i) => {
+            const index = i + 1;
+            return (
+              <div key={index} className="p-4 border rounded-lg bg-gray-50 space-y-4">
+                <h3 className="font-medium">Question {index}</h3>
+                <Textarea
+                  value={questions[index] || ""}
+                  onChange={(e) => handleQuestionChange(index, e.target.value)}
+                  placeholder="Entrez votre question"
+                  className="w-full"
+                />
+                
+                <div className="mt-3">
+                  <h4 className="font-medium mb-2">Réponse</h4>
+                  <div className="flex space-x-4">
+                    <Button
+                      type="button"
+                      className={`px-4 py-2 rounded ${answers[index] === true ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
+                      onClick={() => handleAnswerChange(index, true)}
+                    >
+                      {answers[index] === true && <Check className="mr-1 h-4 w-4" />}
+                      Vrai
+                    </Button>
+                    <Button
+                      type="button"
+                      className={`px-4 py-2 rounded ${answers[index] === false ? 'bg-red-500 text-white' : 'bg-gray-200'}`}
+                      onClick={() => handleAnswerChange(index, false)}
+                    >
+                      {answers[index] === false && <Check className="mr-1 h-4 w-4" />}
+                      Faux
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </motion.div>
+
+        {error && (
+          <motion.div
+            className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <p>{error}</p>
           </motion.div>
+        )}
 
-          <motion.div variants={itemVariants}>
-            <Button onClick={handleSubmit} disabled={loading} className="w-full">
-              {loading ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : null}
-              {loading ? "Création..." : "Créer le quiz"}
-            </Button>
-          </motion.div>
-        </div>
-
-        <div className="space-y-6">{leftColumnQuestions}</div>
-      </div>
-
-      <div className="mt-10 space-y-6">{rightColumnQuestions}</div>
-    </motion.div>
-  )
+        <motion.div variants={itemVariants} className="flex justify-end">
+          <Button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="px-8 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Création en cours...
+              </>
+            ) : (
+              "Créer le quiz"
+            )}
+          </Button>
+        </motion.div>
+      </motion.div>
+    </div>
+  );
 }

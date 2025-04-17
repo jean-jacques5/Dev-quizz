@@ -1,56 +1,77 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+import bcrypt from "bcryptjs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function Login() {
+// Initialisation de Supabase
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { login } = useAuth(); // Utiliser la fonction login du contexte
+  const { login } = useAuth(); // Utiliser la fonction `login` du AuthContext
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-      if (!email || !password) {
-        setError("Veuillez remplir tous les champs");
+    if (!email || !password) {
+      setError("Veuillez remplir tous les champs");
+      return;
+    }
+
+    setError("");
+    setIsLoading(true);
+
+    try {
+      // Vérifier l'utilisateur dans Supabase
+      const { data, error: fetchError } = await supabase
+        .from("utilisateur") // Nom correct de la table
+        .select("id_utilisateur, email, mot_de_passe, nom_utilisateur") // Colonnes exactes
+        .eq("email", email)
+        .single();
+
+      if (fetchError || !data) {
+        setError("Email ou mot de passe incorrect");
         return;
       }
 
-      setError("");
-      setIsLoading(true);
+      // Vérifier le mot de passe
+      const isValidPassword = await bcrypt.compare(password, data.mot_de_passe);
 
-      try {
-        const success = await login(email, password); // Appeler la fonction login du contexte
-
-        if (!success) {
-          setError("Email ou mot de passe incorrect");
-          return;
-        }
-
-        // Connexion réussie
-        alert("Connexion réussie !");
-        router.push("/"); // Rediriger vers la page d'accueil
-      } catch (err) {
-        setError("Une erreur est survenue lors de la connexion");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
+      if (!isValidPassword) {
+        setError("Email ou mot de passe incorrect");
+        return;
       }
-    },
-    [email, password, login, router]
-  );
 
-  // Variants d'animation
+      // Mettre à jour l'état de connexion dans le AuthContext
+      const isLoggedIn = await login(email, password);
+      if (isLoggedIn) {
+        router.push("/profile"); // Rediriger vers la page de profil
+      } else {
+        setError("Une erreur est survenue lors de la connexion");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue lors de la connexion");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {

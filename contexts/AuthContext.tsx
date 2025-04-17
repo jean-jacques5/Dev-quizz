@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation"
 
 // Définir le type pour un utilisateur
 export interface User {
+  [x: string]: any
   id: number
   username: string
   email: string
