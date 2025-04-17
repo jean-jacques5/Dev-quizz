@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -15,6 +15,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { login } = useAuth(); // Utiliser la fonction login du contexte
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -29,24 +30,16 @@ export default function Login() {
       setIsLoading(true);
 
       try {
-        const supabase = createClient();
+        const success = await login(email, password); // Appeler la fonction login du contexte
 
-        // Vérifier les informations d'identification
-        const { data, error } = await supabase
-          .from("utilisateur")
-          .select("*")
-          .eq("email", email)
-          .eq("mot_de_passe", password)
-          .single();
-
-        if (error || !data) {
+        if (!success) {
           setError("Email ou mot de passe incorrect");
           return;
         }
 
         // Connexion réussie
         alert("Connexion réussie !");
-        router.push("/");
+        router.push("/"); // Rediriger vers la page d'accueil
       } catch (err) {
         setError("Une erreur est survenue lors de la connexion");
         console.error(err);
@@ -54,7 +47,7 @@ export default function Login() {
         setIsLoading(false);
       }
     },
-    [email, password, router]
+    [email, password, login, router]
   );
 
   // Variants d'animation
