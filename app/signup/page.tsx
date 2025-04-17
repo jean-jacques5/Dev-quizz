@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import bcryptjs from "bcryptjs";
 
 export default function Signup() {
   const [username, setUsername] = useState("");
@@ -38,13 +39,17 @@ export default function Signup() {
       try {
         const supabase = createClient();
 
-        // Insérer l'utilisateur dans la table `utilisateur`
+        // Chiffrement du mot de passe avant l'envoi à la BDD
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPassword = await bcryptjs.hash(password, salt);
+
+        // Insérer l'utilisateur dans la table `utilisateur` avec le mot de passe chiffré
         const { error } = await supabase
           .from("utilisateur")
           .insert({
             nom_utilisateur: username,
             email: email,
-            mot_de_passe: password,
+            mot_de_passe: hashedPassword, // On envoie le mot de passe chiffré
             role: "utilisateur",
           });
 
