@@ -14,7 +14,7 @@ Suivez les étapes ci-dessous pour installer et exécuter le projet localement.
 1. **Cloner le dépôt :**
 
    ```bash
-   git clone <url-du-repo>
+   git clone <https://github.com/jean-jacques5/Dev-quizz.git>
    cd Dev-quizz
    ```
 
