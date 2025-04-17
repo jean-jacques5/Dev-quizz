@@ -16,6 +16,7 @@ export default function Signup() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const supabase = createClient();
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -36,26 +37,43 @@ export default function Signup() {
       setIsLoading(true);
 
       try {
-        const supabase = createClient();
+        // Vérifier si l'email existe déjà dans la base de données
+        const { data: existingUser, error: checkError } = await supabase
+          .from("utilisateur")
+          .select("email")
+          .eq("email", email)
+          .single();
+
+        if (checkError && checkError.code !== "PGRST116") {
+          console.error("Erreur lors de la vérification de l'email :", checkError);
+          setError("Une erreur est survenue. Veuillez réessayer.");
+          return;
+        }
+
+        if (existingUser) {
+          setError("Cet email est déjà utilisé. Veuillez en choisir un autre.");
+          return;
+        }
 
         // Insérer l'utilisateur dans la table `utilisateur`
-        const { error } = await supabase
+        const { error: insertError } = await supabase
           .from("utilisateur")
           .insert({
             nom_utilisateur: username,
             email: email,
             mot_de_passe: password,
-            role: "utilisateur",
+            role: "utilisateur", // Par défaut, le rôle est "utilisateur"
           });
 
-        if (error) {
-          console.error("Erreur Supabase :", error);
+        if (insertError) {
+          console.error("Erreur Supabase :", insertError);
           setError("Une erreur est survenue lors de l'inscription.");
           return;
         }
 
-        // Rediriger vers la page d'accueil après une inscription réussie
-        router.push("/");
+        // Rediriger vers la page de connexion après une inscription réussie
+        alert("Inscription réussie ! Vous pouvez maintenant vous connecter.");
+        router.push("/login");
       } catch (err) {
         console.error("Erreur inattendue :", err);
         setError("Une erreur inattendue est survenue.");
@@ -63,7 +81,7 @@ export default function Signup() {
         setIsLoading(false);
       }
     },
-    [username, email, password, router]
+    [username, email, password, router, supabase]
   );
 
   // Variants d'animation
@@ -164,10 +182,7 @@ export default function Signup() {
             disabled={isLoading}
           >
             {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Inscription en cours...
-              </>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               "Inscription"
             )}
