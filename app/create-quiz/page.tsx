@@ -106,7 +106,7 @@ export default function CreateQuiz() {
       
       // Debug your database schema
       console.log("Attempting to create quiz with data:", {
-        titre: title,
+        titre_quiz: title,
         image_path: "img/logo.png",
         id_utilisateur: user?.id,
         id_categorie: parseInt(category)
@@ -116,7 +116,7 @@ export default function CreateQuiz() {
       const { data: quizData, error: quizError } = await supabase
         .from('quiz')
         .insert({
-          titre: title,
+          titre_quiz: title,
           image_path: "img/logo.png",
           id_utilisateur: user?.id,
           id_categorie: parseInt(category)
