@@ -17,7 +17,6 @@ export default function Signup() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -38,43 +37,30 @@ export default function Signup() {
       setIsLoading(true);
 
       try {
-        // Vérifier si l'email existe déjà dans la base de données
-        const { data: existingUser, error: checkError } = await supabase
-          .from("utilisateur")
-          .select("email")
-          .eq("email", email)
-          .single();
+        const supabase = createClient();
 
-        if (checkError && checkError.code !== "PGRST116") {
-          console.error("Erreur lors de la vérification de l'email :", checkError);
-          setError("Une erreur est survenue. Veuillez réessayer.");
-          return;
-        }
+        // Chiffrement du mot de passe avant l'envoi à la BDD
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPassword = await bcryptjs.hash(password, salt);
 
-        if (existingUser) {
-          setError("Cet email est déjà utilisé. Veuillez en choisir un autre.");
-          return;
-        }
-
-        // Insérer l'utilisateur dans la table `utilisateur`
+        // Insérer l'utilisateur dans la table `utilisateur` avec le mot de passe chiffré
         const { error } = await supabase
           .from("utilisateur")
           .insert({
             nom_utilisateur: username,
             email: email,
-            mot_de_passe: password,
+            mot_de_passe: hashedPassword, // On envoie le mot de passe chiffré
             role: "utilisateur",
           });
 
-        if (insertError) {
-          console.error("Erreur Supabase :", insertError);
+        if (error) {
+          console.error("Erreur Supabase :", error);
           setError("Une erreur est survenue lors de l'inscription.");
           return;
         }
 
-        // Rediriger vers la page de connexion après une inscription réussie
-        alert("Inscription réussie ! Vous pouvez maintenant vous connecter.");
-        router.push("/login");
+        // Rediriger vers la page d'accueil après une inscription réussie
+        router.push("/");
       } catch (err) {
         console.error("Erreur inattendue :", err);
         setError("Une erreur inattendue est survenue.");
@@ -82,7 +68,7 @@ export default function Signup() {
         setIsLoading(false);
       }
     },
-    [username, email, password, router, supabase]
+    [username, email, password, router]
   );
 
   // Variants d'animation
@@ -183,7 +169,10 @@ export default function Signup() {
             disabled={isLoading}
           >
             {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Inscription en cours...
+              </>
             ) : (
               "Inscription"
             )}
